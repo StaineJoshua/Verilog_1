@@ -1,0 +1,303 @@
+module mux4to1(I0,I1,I2,I3,S1,S2,Y);
+    input I0,I1,I2,I3,S1,S2;
+    output Y;
+    wire p,q,a,b,c,d;
+    not (p,S1);
+    not (q,S2);
+    and (a,I0,p,q);
+    and (b,I1,p,S2);
+    and (c,I2,S1,q);
+    and (d,I3,S1,S2);
+    or (Y,a,b,c,d);    
+endmodule
+
+module mux4to1_bhv(I,S,Y);
+    input wire [0:3] I;
+    input wire [1:0] S;
+    output reg Y;
+    always @(*) begin
+        case (S)
+            2'b00: Y = I[0];
+            2'b01: Y = I[1];
+            2'b10: Y = I[2];
+            2'b11: Y = I[3];
+            default: Y = 1'b0;
+        endcase
+    end
+endmodule
+
+
+module mux4to1_bhv_tb;
+    reg [0:3]I;
+    reg [1:0]S;
+    wire Y;
+    mux4to1_bhv dut(.I(I),.S(S),.Y(Y));
+    initial 
+    begin
+        I = 4'b1010;
+        S = 2'b00;
+        #100
+        I = 4'b1010;
+        S = 2'b01;
+        #100
+        I = 4'b1010;
+        S = 2'b10;
+        #100
+        I = 4'b1010;
+        S = 2'b11;
+    end
+endmodule
+
+
+module mux4to1_df(A,B,C,D,S1,S0,Y);
+    input A,B,C,D,S1,S0;
+    output Y;
+    
+    assign Y =   (S1 == 0 && S0 == 0) ? A:
+                 (S1 == 0 && S0 == 1) ? B:
+                 (S1 == 1 && S0 == 0) ? C: 
+                 (S1 == 1 && S0 == 1) ? D: 1'b0;
+                                         
+endmodule
+
+module mux4to1_df_tb;
+    reg a,b,c,d,s1,s0;
+    wire y;
+    mux4to1_df dut(.A(a),.B(b),.C(c),.D(d),.S1(s1),.S0(s0),.Y(y));
+    initial 
+    begin
+        a = 1'b1;
+        b = 1'b0;
+        c = 1'b1;
+        d = 1'b0;
+        s1 = 1'b0;
+        s0 = 1'b0;
+        #100
+        a = 1'b1;
+        b = 1'b0;
+        c = 1'b1;
+        d = 1'b0;
+        s1 = 1'b0;
+        s0 = 1'b1;
+        #100
+        a = 1'b1;
+        b = 1'b0;
+        c = 1'b1;
+        d = 1'b0;
+        s1 = 1'b1;
+        s0 = 1'b0;
+        #100
+        a = 1'b1;
+        b = 1'b0;
+        c = 1'b1;
+        d = 1'b0;
+        s1 = 1'b1;
+        s0 = 1'b1;
+    end
+endmodule
+
+
+module mux2to1(A,B,S,Y);
+    input A,B,S;
+    output Y;    
+    assign Y = (S) ? B : A;
+endmodule
+
+module mux4to1_str(I,S,Y);
+    input [0:3]I;
+    input [1:0]S;
+    output Y;
+    wire y1,y2;
+    
+    mux2to1 m1(.A(I[0]), .B(I[1]), .S(S[0]), .Y(y1));
+    mux2to1 m2(.A(I[2]), .B(I[4]), .S(S[0]), .Y(y2));
+    
+    mux2to1 m3(.A(y1), .B(y1), .S(S[1]), .Y(Y));
+    
+endmodule    
+
+
+module mux4to1_str_tb;
+    reg [0:3]I;
+    reg [1:0]S;
+    wire Y;
+    
+    mux4to1_str dut(.I(I), .S(S), .Y(Y));
+    
+    initial
+    begin
+        I = 4'b1010;
+        S = 2'b00;
+        #100
+        I = 4'b1010;
+        S = 2'b01;
+        #100
+        I = 4'b1010;
+        S = 2'b10;
+        #100 
+        I = 4'b1010;
+        S = 2'b11;
+     end
+endmodule
+
+module demux_2_1(
+  input sel,
+  input i,
+  output y0, y1);
+  
+  assign {y0,y1} = sel?{1'b0,i}: {i,1'b0};
+endmodule
+
+module demux_tb;
+  reg sel, i;
+  wire y0, y1;
+  
+  demux_2_1 demux(sel, i, y0, y1);
+  initial begin
+    $monitor("sel = %h: i = %h --> y0 = %h, y1 = %h", sel, i, y0, y1);
+    sel=0; i=0; #1;
+    sel=0; i=1; #1;
+    sel=1; i=0; #1;
+    sel=1; i=1; #1;
+  end
+endmodule
+
+module demux_1_4(
+  input [1:0] sel,
+  input  i,
+  output reg y0,y1,y2,y3);
+    
+  always @(*) begin
+    case(sel)
+      2'h0: {y0,y1,y2,y3} = {i,3'b0};
+      2'h1: {y0,y1,y2,y3} = {1'b0,i,2'b0};
+      2'h2: {y0,y1,y2,y3} = {2'b0,i,1'b0};
+      2'h3: {y0,y1,y2,y3} = {3'b0,i};
+      default: $display("Invalid sel input");
+    endcase
+  end
+endmodule
+
+module tb;
+  reg [1:0] sel;
+  reg i;
+  wire y0,y1,y2,y3;
+  
+  demux_1_4 demux(sel, i, y0, y1, y2, y3);
+  
+  initial begin
+    $monitor("sel = %b, i = %b -> y0 = %0b, y1 = %0b ,y2 = %0b, y3 = %0b", sel,i, y0,y1,y2,y3);
+    sel=2'b00; i=0; #1;
+    sel=2'b00; i=1; #1;
+    sel=2'b01; i=0; #1;
+    sel=2'b01; i=1; #1;
+    sel=2'b10; i=0; #1;
+    sel=2'b10; i=1; #1;
+    sel=2'b11; i=0; #1;
+    sel=2'b11; i=1; #1;
+  end
+endmodule
+
+module demux_2_1(
+  input sel,
+  input i,
+  output y0, y1);
+  
+  assign {y0,y1} = sel?{1'b0,i}: {i,1'b0};
+endmodule
+
+module demux_1_4(
+  input sel0, sel1,
+  input  i,
+  output reg y0, y1, y2, y3);
+  
+  wire z1,z2;
+  
+  demux_2_1 d1(sel0, i, z1, z2);
+  demux_2_1 d2(sel1, z1, y0, y1);
+  demux_2_1 d3(sel1, z2, y2, y3);
+endmodule
+
+module tb;
+  reg sel0, sel1;
+  reg i;
+  wire y0,y1,y2,y3;
+  
+  demux_1_4 demux(sel0, sel1, i, y0, y1, y2, y3);
+  
+  initial begin
+    $monitor("sel0 = %b, sel1 = %b, i = %b -> y0 = %0b, y1 = %0b ,y2 = %0b, y3 = %0b", sel0, sel1, i, y0,y1,y2,y3);
+    sel0=0; sel1=0; i=0; #1;
+    sel0=0; sel1=0; i=1; #1;
+    sel0=0; sel1=1; i=0; #1;
+    sel0=0; sel1=1; i=1; #1;
+    sel0=1; sel1=0; i=0; #1;
+    sel0=1; sel1=0; i=1; #1;
+    sel0=1; sel1=1; i=0; #1;
+    sel0=1; sel1=1; i=1; #1;
+  end
+endmodule
+
+
+module synchronous_counter #(parameter SIZE=4)(
+  input clk, rst_n,
+  input up,
+  output reg [3:0] cnt
+);
+
+  always@(posedge clk) begin
+    if(!rst_n) begin
+      cnt <= 4'h0;
+    end
+    else begin
+      if(up) cnt <= cnt + 1'b1;
+      else cnt <= cnt - 1'b1;
+    end
+  end
+endmodule
+
+module tb;
+  reg clk, rst_n;
+  reg up;
+  wire [3:0] cnt;
+  synchronous_counter(clk, rst_n, up, cnt);
+  
+  initial begin
+    clk = 0; rst_n = 0; 
+    up = 1;
+    #4; rst_n = 1;
+    #80;
+    rst_n = 0;
+    #4; rst_n = 1; up = 0;
+    #50;
+    $finish;
+  end
+  always #2 clk = ~clk;
+
+  initial begin
+    $dumpfile("dump.vcd"); $dumpvars;
+  end
+endmodule
+
+module half_subtractor(input a, b, output D, B);
+  assign D = a ^ b;
+  assign B = ~a & b;
+endmodule
+
+module tb_top;
+  reg a, b;
+  wire D, B;
+  
+  half_subtractor hs(a, b, D, B);
+  
+  initial begin
+    $monitor("At time %0t: a=%b b=%b, difference=%b, borrow=%b",$time, a,b,D,B);
+    a = 0; b = 0;
+    #1;
+    a = 0; b = 1;
+    #1;
+    a = 1; b = 0;
+    #1;
+    a = 1; b = 1;
+  end
+endmodule
