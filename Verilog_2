@@ -1,0 +1,203 @@
+module full_adder(
+  input a, b, cin,
+  output sum, cout
+);
+  
+  assign {sum, cout} = {a^b^cin, ((a & b) | (b & cin) | (a & cin))};
+  //or
+  //assign sum = a^b^cin;
+  //assign cout = (a & b) | (b & cin) | (a & cin);
+endmodule
+
+module ripple_carry_adder #(parameter SIZE = 4) (
+  input [SIZE-1:0] A, B, 
+  input Cin,
+  output [SIZE-1:0] S, Cout);
+  
+  genvar g;
+  
+  full_adder fa0(A[0], B[0], Cin, S[0], Cout[0]);
+  generate  // This will instantiate full_adder SIZE-1 times
+    for(g = 1; g<SIZE; g++) begin
+      full_adder fa(A[g], B[g], Cout[g-1], S[g], Cout[g]);
+    end
+  endgenerate
+endmodule
+
+
+module RCA_TB;
+  wire [3:0] S, Cout;
+  reg [3:0] A, B;
+  reg Cin;
+  wire[4:0] add;
+  
+  ripple_carry_adder rca(A, B, Cin, S, Cout);
+  assign add = {Cout[3], S};
+  
+  initial begin
+    $monitor("A = %b: B = %b, Cin = %b --> S = %b, Cout[3] = %b, Addition = %0d", A, B, Cin, S, Cout[3], add);
+    A = 1; B = 0; Cin = 0; #3;
+    A = 2; B = 4; Cin = 1; #3;
+    A = 4'hb; B = 4'h6; Cin = 0; #3;
+    A = 5; B = 3; Cin = 1; #3;
+    $finish;
+  end
+  
+  initial begin
+    $dumpfile("waves.vcd");
+    $dumpvars;
+  end
+endmodule
+
+
+module b2g_converter #(parameter WIDTH=4) (input [WIDTH-1:0] binary, output [WIDTH-1:0] gray);
+  genvar i;    
+  generate
+    for(i=0;i<WIDTH-1;i++) begin
+      assign gray[i] = binary[i] ^ binary[i+1];
+    end
+  endgenerate
+  
+  assign gray[WIDTH-1] = binary[WIDTH-1];
+endmodule  
+
+
+module TB;
+  reg [3:0] binary, gray;
+  b2g_converter b2g(binary, gray);
+  
+  initial begin
+    $monitor("Binary = %b --> Gray = %b", binary, gray);
+    binary = 4'b1011; #1;
+    binary = 4'b0111; #1;
+    binary = 4'b0101; #1;
+    binary = 4'b1100; #1;
+    binary = 4'b1111;
+  end
+endmodule
+
+
+module g2b_converter #(parameter WIDTH=4) (input [WIDTH-1:0] gray, output [WIDTH-1:0] binary);
+  /*
+  assign binary[0] = gray[3] ^ gray[2] ^ gray[1] ^ gray[0];
+  assign binary[1] = gray[3] ^ gray[2] ^ gray[1];
+  assign binary[2] = gray[3] ^ gray[2];
+  assign binary[3] = gray[3];
+  */
+  // OR
+  genvar i;
+  generate
+    for(i=0;i<WIDTH;i++) begin
+      assign binary[i] = ^(gray >> i);
+    end
+  endgenerate
+endmodule
+
+
+module TB;
+  reg [3:0] binary, gray;
+  g2b_converter g2b(gray, binary);
+  
+  initial begin
+    $monitor("Gray = %b --> Binary = %b", gray, binary);
+    gray = 4'b1110; #1;
+    gray = 4'b0100; #1;
+    gray = 4'b0111; #1;
+    gray = 4'b1010; #1;
+    gray = 4'b1000;
+  end
+endmodule
+
+
+module binary_encoder(
+  input [7:0] D,
+  output [2:0] y);
+  
+  assign y[2] = D[4] | D[5] | D[6] | D[7];
+  assign y[1] = D[2] | D[3] | D[6] | D[7];
+  assign y[0] = D[1] | D[3] | D[5] | D[7];
+endmodule
+
+module tb;
+  reg [7:0] D;
+  wire [2:0] y;
+  int i;
+  
+  binary_encoder bin_enc(D, y);
+  
+  initial begin
+    D=8'b1; #1;
+    for(i=0; i<8; i++) begin
+      $display("D = %h(in dec:%0d) -> y = %0h", D, i, y);
+      D=D<<1; #1;
+    end
+  end
+endmodule
+
+module priority_encoder(
+  input [7:0] D,
+  output reg [2:0] y);
+  
+  always@(D) begin
+    casex(D)
+      8'b1xxx_xxxx: y = 3'b111;
+      8'b01xx_xxxx: y = 3'b110;
+      8'b001x_xxxx: y = 3'b101;
+      8'b0001_xxxx: y = 3'b100;
+      8'b0000_1xxx: y = 3'b011;
+      8'b0000_01xx: y = 3'b010;
+      8'b0000_001x: y = 3'b001;
+      8'b0000_0001: y = 3'b000;
+      default: $display("Invalid data received");
+    endcase
+  end
+endmodule
+
+module tb;
+  reg [7:0] D;
+  wire [2:0] y;
+  
+  priority_encoder pri_enc(D, y);
+  
+  initial begin
+    $monitor("D = %b -> y = %0b", D, y);
+    repeat(5) begin
+      D=$random; #1;
+    end
+  end
+endmodule
+
+
+module binary_decoder(
+  input [2:0] D,
+  output reg [7:0] y);
+  
+  always@(D) begin
+    y = 0;
+    case(D)
+      3'b000: y[0] = 1'b1;
+      3'b001: y[1] = 1'b1;
+      3'b010: y[2] = 1'b1;
+      3'b011: y[3] = 1'b1;
+      3'b100: y[4] = 1'b1;
+      3'b101: y[5] = 1'b1;
+      3'b110: y[6] = 1'b1;
+      3'b111: y[7] = 1'b1;
+      default: y = 0;
+    endcase
+  end
+endmodule
+
+module tb;
+  reg [2:0] D;
+  wire [7:0] y;
+  
+  binary_decoder bin_dec(D, y);
+  
+  initial begin
+    $monitor("D = %b -> y = %0b", D, y);
+    repeat(5) begin
+      D=$random; #1;
+    end
+  end
+endmodule
