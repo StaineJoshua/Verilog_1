@@ -1,0 +1,62 @@
+% MATLAB code for
+% Defining axes for multiple plots
+ax1 = axes('Position',[0.1 0.1 0.45 0.45]);
+ax2=axes('Position',[0.6 0.6 0.35 0.35]);
+
+% Defining signal
+freq = 23;                %freq
+afreq = 2*pi*freq;        %angular frequency
+amp = 0.23;                %amplitude
+phase = pi/4;            %phase angle
+
+% Time vector
+T = linspace(-pi,pi,100);
+
+% Creating signal
+signal = amp*sin((afreq * T) + phase);
+
+% Adding random error in signal
+signal = signal + 0.23*random(size(T));
+
+% Plotting original signal in axes 1
+plot(ax1,T,signal),title(ax1,"Original signal")
+
+%computing DFT using Fast Fourier Transform
+y=fft(signal);
+
+%plotting transformed signal in axes 2
+plot(ax2,T,y),title(ax2,"FFT signal")
+
+
+  % MATLAB code for
+% Defining the pulse
+x=linspace(-2.5,2.5,300);
+y=rectpuls(x,1);
+
+% Computing the DFT using FFT
+k=fft(y);
+
+% Defining axes for multiple plots
+ax1=axes('Position',[0.03 0.03 0.3 0.3]);
+ax2=axes('Position',[0.39 0.39 0.5 0.5]);
+
+% Plotting original pulse
+plot(ax1,x,y)
+axis(ax1,[-1 1 -0.1 1.23]),title(ax1,"Rectangular pulse")
+
+% Plotting the DFT of the rectangular pulse
+plot(ax2,x,k)
+axis(ax2,[-1 1 -.9 .9]),title(ax2,"DFT of rectangular pulse")
+
+% MATLAB code for  creating a
+% matrix of exponential of random numbers
+mat = exprnd(1,3);
+
+% Calculating its DFT using FFT entire matrix
+fft_mat_entire = fft(mat);
+
+% Calculating its DFT using FFT dimension 1
+fft_mat_dim1 = fft(mat,[],1);
+
+% Calculating its DFT using FFT dimension 2
+fft_mat_dim2 = fft(mat,[],2);
