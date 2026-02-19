@@ -60,3 +60,52 @@ fft_mat_dim1 = fft(mat,[],1);
 
 % Calculating its DFT using FFT dimension 2
 fft_mat_dim2 = fft(mat,[],2);
+
+
+
+
+#include <stdio.h>
+#include "platform.h"
+#include 'xgpio.h"
+#include "xparameters.h"
+#include "xil_printf.h"
+
+int main()
+{
+Xgpio input,output;
+int a;
+int y;
+
+Xgpio_Initialize(&input,XPAR_AXI_GPIO_0_DEVICE_ID);
+Xgpio_Initialize(&output,XPAR_AXI_GPIO_1_DEVICE_ID); // Ctrl + shift
+
+XGpio_SetDataDirection(&input,1,1);// Fore Data direction reg input is 1, output is 0
+XGpio_SetDataDirection(&output,1,0);
+
+
+print('Hello World');
+
+while(1)
+{
+  a = XGpio_DiscreteRead(&input,1);
+  
+   if (a==1)
+   {
+     y=0;
+   }
+   else 
+   {
+     y=1;
+   }
+
+  XGpio_DiscreteWrite(&output,1.y);
+}
+
+   
+ 
+
+
+
+
+
+
